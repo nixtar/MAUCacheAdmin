@@ -98,6 +98,7 @@ function Invoke-MAUCacheDownload {
                 }
             }
             $targetScratchItem.Refresh()
+            $targetCacheItem.Delete()
             Move-Item -Path $targetScratchItem.FullName -Destination $targetCacheItem.FullName -Force
         } else {
             Write-Host "$($dlJob.Payload) is in the cache and is healthy" -ForegroundColor Green
