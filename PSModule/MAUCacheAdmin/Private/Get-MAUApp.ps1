@@ -12,7 +12,10 @@ function Get-MAUApp {
         $ChannelURI,
         [Parameter(Mandatory=$true)]
         [System.Net.Http.HttpClient]
-        $HttpClient
+        $HttpClient,
+        [Parameter(Mandatory=$false)]
+        [string[]]
+        $ExcludeCDNs
     )
 
     $logPrefix = "$($MyInvocation.MyCommand):"
@@ -40,7 +43,9 @@ function Get-MAUApp {
         Write-Verbose "$logPrefix No object returned from Get-PlistObjectFromURI!"
         throw "Failed to process $($app.CollateralURIs.AppXML)"
     }
-    $app.Packages = @(ConvertFrom-AppPackageDictionary -AppPackageDictionaries $appPackageDicts)
+
+    $hostnameRegex = [regex]::new("http(s?)://(?<hostname>[^/]+)/")
+    $app.Packages = @(ConvertFrom-AppPackageDictionary -AppPackageDictionaries $appPackageDicts | Where-Object { $_.Location -match $hostnameRegex -and $ExcludeCDNs -notcontains $matches['hostname'] })
 
     # Process Version Check XML
     Write-Verbose "$logPrefix Getting App Version Info"
@@ -62,6 +67,7 @@ function Get-MAUApp {
 
         # Rethrow if we don't have a single app to use as version/data pont of truth
         if ($app.Packages.Count -ne 1) {
+            Write-Verbose "$logPrefix $($app.Packages.Count) packages found, cannot determine version from App XML"
             throw
         }
         
@@ -95,7 +101,7 @@ function Get-MAUApp {
             Write-Verbose "$logPrefix No object returned from Get-PlistObjectFromURI for version $_"
             return
         }
-        $historyAppPackageObjs = @(ConvertFrom-AppPackageDictionary -AppPackageDictionaries $historyAppPackageDicts)
+        $historyAppPackageObjs = @(ConvertFrom-AppPackageDictionary -AppPackageDictionaries $historyAppPackageDicts | Where-Object { $_.Location -match $hostnameRegex -and $ExcludeCDNs -notcontains $matches['hostname'] })
         $app.HistoricPackages[$_] = $historyAppPackageObjs
     }
 
