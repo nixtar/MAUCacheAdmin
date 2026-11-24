@@ -6,7 +6,10 @@ function Get-MAUApps {
         [Parameter(Mandatory = $true)]
         [ValidateSet("Current", "Preview", "Beta", "CurrentThrottle")]
         [string]
-        $Channel
+        $Channel,
+        [Parameter()]
+        [string[]]
+        $ExcludeCDNs = @("officecdnmac.microsoft.com")
     )
 
     # Set http client for the function
@@ -49,7 +52,7 @@ function Get-MAUApps {
     $pos = 1
     $mauApps = @($filteredApps | ForEach-Object {
         Write-Progress -Id 0 -Activity "Processing Apps $pos of $($filteredApps.Count)" -Status "Channel: $Channel AppID: $($_.AppID) AppName: $($_.AppName)" -PercentComplete ($pos / $filteredApps.Count * 100)
-        Get-MAUApp -AppID $_.AppID -AppName $_.AppName -ChannelURI $mauCdnUriBuilder.Uri -HttpClient $httpClient
+        Get-MAUApp -AppID $_.AppID -AppName $_.AppName -ChannelURI $mauCdnUriBuilder.Uri -HttpClient $httpClient -ExcludeCDNs $ExcludeCDNs
         $pos++
     })
     Write-Progress -Id 0 -Activity "Processing Apps $pos of $($filteredApps.Count)" -Completed
